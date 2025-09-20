@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mila's Tables Game</title>
+  <style>
+    :root {
+      /* Bright azure palette */
+      --bg: #091824;          /* deep base to let azure pop */
+      --panel: #0d2333;       /* panel/card base */
+      --card: #0e2740;        /* slightly brighter */
+      --text: #f8fafc;        /* near white */
+      --muted: #cbd5e1;       /* slate-300 */
+      --primary: #22d3ee;     /* cyan-400 (bright azure) */
+      --primary-2: #38bdf8;   /* sky-400 */
+      --success: #22c55e;     /* bright green */
+      --danger: #fb3b3b;      /* bright red */
+      --warning: #f59e0b;     /* amber */
+      --shadow: 0 10px 25px rgba(0,0,0,0.35), 0 6px 10px rgba(0,0,0,0.25);
+      --radius: 14px;
+    }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      margin: 0;
+      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
+        Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1000px 700px at 10% -10%, rgba(34,211,238,0.25) 0%, transparent 60%),
+                  radial-gradient(1000px 700px at 110% 110%, rgba(56,189,248,0.25) 0%, transparent 60%),
+                  linear-gradient(160deg, #081523 0%, #0d2333 100%);
+    }
+
+    /* Consistent sizing model prevents width mismatches */
+    *, *::before, *::after { box-sizing: border-box; }
+
+    /* Keep layout width stable when content height changes (prevents viewport width shifts
+       due to scrollbar appearing/disappearing) */
+    html { overflow-y: scroll; }
+
+    .wrap {
+      min-height: 100%;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+
+    header {
+      padding: 18px 20px 8px;
+      text-align: center;
+    }
+
+    .title {
+      font-weight: 800;
+      letter-spacing: 0.3px;
+      font-size: clamp(20px, 2.3vw, 32px);
+    }
+
+    .subtle {
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-top: 4px;
+    }
+
+    .container {
+      max-width: 920px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 16px;
+      display: grid;
+      gap: 16px;
+      grid-template-columns: 1fr;
+    }
+
+    /* Ensure panels always use the same width */
+    .game-card, details.settings { width: 100%; }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+
+    details.settings {
+      background: linear-gradient(180deg, #0f2a40, #0e2740);
+      border: 1px solid rgba(56,189,248,0.25);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    details.settings > summary {
+      cursor: pointer;
+      list-style: none;
+      padding: 14px 20px; /* match card side padding */
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: linear-gradient(180deg, rgba(34,211,238,0.25), rgba(34,211,238,0.10));
+      border-bottom: 1px solid rgba(34,211,238,0.35);
+      user-select: none;
+    }
+
+    details.settings > summary::-webkit-details-marker { display: none; }
+
+    .chev {
+      width: 18px;
+      height: 18px;
+      display: inline-block;
+      transform: rotate(0deg);
+      transition: transform 180ms ease;
+    }
+    details[open] > summary .chev { transform: rotate(90deg); }
+
+    .settings-body {
+      padding: 20px; /* match card padding */
+      display: grid;
+      gap: 12px;
+    }
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+    label { color: var(--muted); font-size: 0.92rem; }
+    input[type="number"], select {
+      background: #0b1220;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      color: var(--text);
+      padding: 10px 12px;
+      outline: none;
+      transition: border 160ms ease, box-shadow 160ms ease;
+    }
+    input[type="number"]:focus, select:focus {
+      border-color: rgba(124,58,237,0.7);
+      box-shadow: 0 0 0 3px rgba(124,58,237,0.25);
+    }
+
+    .switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      user-select: none;
+    }
+    .switch input { accent-color: var(--primary); }
+    .switch-group { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+      align-items: center; /* avoid stretching to tallest button */
+    }
+
+    .btn {
+      background: linear-gradient(180deg, rgba(34,211,238,0.95), rgba(56,189,248,0.9));
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+      box-shadow: var(--shadow);
+      transition: transform 120ms ease, filter 120ms ease, opacity 120ms ease;
+      white-space: nowrap; /* keep labels on one line */
+    }
+    .btn:hover { filter: brightness(1.05); }
+    .btn:active { transform: translateY(1px); }
+    .btn.secondary {
+      background: linear-gradient(180deg, rgba(56,189,248,0.95), rgba(14,165,233,0.9));
+    }
+    .btn.ghost {
+      background: transparent;
+      border: 1px solid rgba(34,211,238,0.35);
+      color: var(--text);
+      box-shadow: none;
+    }
+
+    .game-card {
+      background: linear-gradient(180deg, #0f2a40, #0e2740);
+      border: 1px solid rgba(56,189,248,0.25);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .score {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      font-size: 0.95rem;
+      color: var(--muted);
+    }
+    .score strong { color: var(--text); }
+
+    .equation {
+      text-align: center;
+      font-size: clamp(34px, 6.5vw, 64px);
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      padding: 8px 0 2px;
+    }
+
+    :root { --opt-h: 56px; --opt-gap: 12px; }
+    .options {
+      display: grid;
+      gap: var(--opt-gap);
+      grid-auto-flow: row;
+      min-height: calc(var(--opt-h) * 2 + var(--opt-gap)); /* reserve space for up to 2 rows */
+    }
+    /* Layout by number of options */
+    .options.opts-2 { grid-template-columns: repeat(2, 1fr); }
+    .options.opts-3 { grid-template-columns: repeat(3, 1fr); }
+    .options.opts-4 { grid-template-columns: repeat(2, 1fr); }
+    .options.opts-6 { grid-template-columns: repeat(3, 1fr); }
+
+    .option {
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.06));
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      color: var(--text);
+      padding: 14px 12px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 1.1rem;
+      text-align: center;
+      transition: transform 120ms ease, background 160ms ease, border 160ms ease, opacity 160ms ease;
+      user-select: none;
+      min-height: var(--opt-h);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .option:hover { transform: translateY(-1px); }
+    .option:active { transform: translateY(0); }
+    .option.correct {
+      background: linear-gradient(180deg, rgba(16,185,129,0.15), rgba(16,185,129,0.08));
+      border-color: rgba(16,185,129,0.55);
+      box-shadow: 0 0 0 3px rgba(16,185,129,0.18) inset;
+    }
+    .option.wrong {
+      background: linear-gradient(180deg, rgba(251,59,59,0.18), rgba(251,59,59,0.08));
+      border-color: rgba(251,59,59,0.55);
+      box-shadow: 0 0 0 3px rgba(251,59,59,0.18) inset;
+    }
+    .option.disabled { opacity: 0.6; cursor: default; }
+
+    /* We now show correct/wrong by coloring the main equation */
+    .feedback { display: none; }
+    .equation.ok { color: var(--success); text-shadow: 0 0 12px rgba(34,197,94,0.45); }
+    .equation.bad { color: var(--danger); text-shadow: 0 0 12px rgba(251,59,59,0.45); }
+
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.85rem;
+      padding: 20px;
+    }
+
+    /* Confetti overlay */
+    #confettiCanvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 999;
+      display: none;
+    }
+  </style>
+  <link rel="icon" href="data:," />
+  <meta name="color-scheme" content="dark light" />
+  <meta name="description" content="Single-page multiplication tables practice game." />
+  <meta name="theme-color" content="#7c3aed" />
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="title">Mila's Tables Game</div>
+      <div class="subtle">Practice multiplication</div>
+    </header>
+
+    <main class="container">
+      <div class="row">
+        <section class="game-card" aria-live="polite">
+          <div class="score">
+            <div>
+              Correct: <strong id="correctCnt">0</strong> / <strong id="totalCnt">0</strong>
+            </div>
+            <div>
+              Accuracy: <strong id="accuracy">—</strong>
+            </div>
+          </div>
+
+          <div id="equation" class="equation" aria-label="problem">—</div>
+
+          <div id="options" class="options"></div>
+
+          <div id="feedback" class="feedback" role="status"></div>
+
+          <div class="btn-row">
+            <button id="nextBtn" class="btn ghost" title="Next question">Next</button>
+            <button id="resetBtn" class="btn secondary" title="Reset score">Reset Score</button>
+          </div>
+        </section>
+
+        <aside>
+          <details class="settings" id="settings" open>
+            <summary>
+              <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              <strong>Settings</strong>
+            </summary>
+            <div class="settings-body">
+              <div class="field-row">
+                <div class="field">
+                  <label for="aMin">A min</label>
+                  <input id="aMin" type="number" min="0" value="1" />
+                </div>
+                <div class="field">
+                  <label for="aMax">A max</label>
+                  <input id="aMax" type="number" min="0" value="12" />
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="bMin">B min</label>
+                  <input id="bMin" type="number" min="0" value="1" />
+                </div>
+                <div class="field">
+                  <label for="bMax">B max</label>
+                  <input id="bMax" type="number" min="0" value="12" />
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <label for="numOptions">Options</label>
+                  <select id="numOptions">
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4" selected>4</option>
+                    <option value="6">6</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <div class="switch-group">
+                    <label class="switch" title="Advance automatically after answering">
+                      <input id="autoNext" type="checkbox" checked /> Auto‑advance
+                    </label>
+                    <label class="switch" title="Celebrate milestones with confetti">
+                      <input id="enableConfetti" type="checkbox" checked /> Confetti
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <div class="btn-row">
+                <button id="applySettings" class="btn">Apply</button>
+                <button id="newQuestion" class="btn ghost">New Question</button>
+              </div>
+            </div>
+          </details>
+        </aside>
+      </div>
+    </main>
+
+    <footer>
+      Built for quick practice — tweak ranges in Settings.
+    </footer>
+  </div>
+
+  <canvas id="confettiCanvas"></canvas>
+
+  <script>
+    (function() {
+      const el = (id) => document.getElementById(id);
+
+      const equationEl = el('equation');
+      const optionsEl = el('options');
+      const feedbackEl = el('feedback');
+      const nextBtn = el('nextBtn');
+      const resetBtn = el('resetBtn');
+      const correctCntEl = el('correctCnt');
+      const totalCntEl = el('totalCnt');
+      const accuracyEl = el('accuracy');
+
+      const aMinEl = el('aMin');
+      const aMaxEl = el('aMax');
+      const bMinEl = el('bMin');
+      const bMaxEl = el('bMax');
+      const numOptionsEl = el('numOptions');
+      const autoNextEl = el('autoNext');
+      const confettiToggleEl = el('enableConfetti');
+      const applySettingsBtn = el('applySettings');
+      const newQuestionBtn = el('newQuestion');
+      const confettiCanvas = el('confettiCanvas');
+
+      const state = {
+        aMin: 1, aMax: 12,
+        bMin: 1, bMax: 12,
+        numOptions: 4,
+        autoNext: true,
+        correct: 0,
+        total: 0,
+        currentA: null,
+        currentB: null,
+        answered: false,
+        nextTimeout: null,
+        confettiEnabled: true,
+      };
+
+      // Confetti controller
+      const confetti = (() => {
+        let ctx = null;
+        let anim = null;
+        let startTime = 0;
+        let duration = 2400; // ms — a bit longer celebration
+        let particles = [];
+
+        const colors = ['#22d3ee', '#38bdf8', '#ffd166', '#22c55e', '#fb3b3b', '#a78bfa', '#f59e0b', '#ff7ac6'];
+
+        function resize() {
+          if (!confettiCanvas) return;
+          const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+          confettiCanvas.width = Math.floor(window.innerWidth * dpr);
+          confettiCanvas.height = Math.floor(window.innerHeight * dpr);
+          ctx = confettiCanvas.getContext('2d');
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        function makeParticles(n) {
+          particles = [];
+          for (let i = 0; i < n; i++) {
+            const x = Math.random() * window.innerWidth;
+            const y = -Math.random() * window.innerHeight * 0.2; // start slightly above
+            const size = 6 + Math.random() * 8;
+            const vx = (Math.random() - 0.5) * 2.2;
+            const vy = 1 + Math.random() * 2.5;
+            const ay = 0.04 + Math.random() * 0.06;
+            const rot = Math.random() * Math.PI * 2;
+            const vr = (Math.random() - 0.5) * 0.25;
+            const color = colors[i % colors.length];
+            particles.push({ x, y, vx, vy, ay, size, rot, vr, color, life: 0 });
+          }
+        }
+
+        function step(ts) {
+          if (!startTime) startTime = ts;
+          const elapsed = ts - startTime;
+          ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+          const t = Math.min(1, elapsed / duration);
+          for (const p of particles) {
+            p.vy += p.ay;
+            p.x += p.vx;
+            p.y += p.vy;
+            p.rot += p.vr;
+            p.life = t;
+            const fade = t < 0.7 ? 1 : 1 - (t - 0.7) / 0.3; // fade last 30%
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, Math.min(1, fade));
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.rot);
+            const w = p.size * 1.2;
+            const h = p.size * 0.9;
+            ctx.fillStyle = p.color;
+            ctx.fillRect(-w / 2, -h / 2, w, h);
+            ctx.restore();
+          }
+          if (elapsed < duration) {
+            anim = requestAnimationFrame(step);
+          } else {
+            // end
+            cancelAnimationFrame(anim);
+            anim = null;
+            startTime = 0;
+            particles = [];
+            ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+            confettiCanvas.style.display = 'none';
+          }
+        }
+
+        function burst(n = 120) {
+          if (!confettiCanvas) return;
+          if (anim) {
+            cancelAnimationFrame(anim);
+            anim = null;
+          }
+          resize();
+          makeParticles(n);
+          startTime = 0;
+          confettiCanvas.style.display = 'block';
+          anim = requestAnimationFrame(step);
+        }
+
+        window.addEventListener('resize', () => { if (anim) resize(); });
+        return { burst };
+      })();
+
+      // Allowed option counts (removed 5)
+      const allowedCounts = [2,3,4,6];
+      const coerceCount = (n) => {
+        n = Number(n) || 4;
+        if (allowedCounts.includes(n)) return n;
+        // if user had 5 saved, pick nearest higher (6)
+        if (n === 5) return 6;
+        // fallback clamp to nearest allowed
+        const sorted = allowedCounts.slice().sort((a,b)=>a-b);
+        if (n <= sorted[0]) return sorted[0];
+        if (n >= sorted[sorted.length-1]) return sorted[sorted.length-1];
+        // find closest
+        let best = sorted[0], bestDiff = Math.abs(n - best);
+        for (const v of sorted) {
+          const d = Math.abs(n - v);
+          if (d < bestDiff) { best = v; bestDiff = d; }
+        }
+        return best;
+      };
+
+      // Load settings from localStorage if available
+      try {
+        const saved = JSON.parse(localStorage.getItem('mtg-settings') || '{}');
+        if (typeof saved.aMin === 'number') state.aMin = saved.aMin;
+        if (typeof saved.aMax === 'number') state.aMax = saved.aMax;
+        if (typeof saved.bMin === 'number') state.bMin = saved.bMin;
+        if (typeof saved.bMax === 'number') state.bMax = saved.bMax;
+        if (typeof saved.numOptions === 'number') state.numOptions = coerceCount(saved.numOptions);
+        if (typeof saved.autoNext === 'boolean') state.autoNext = saved.autoNext;
+        if (typeof saved.confettiEnabled === 'boolean') state.confettiEnabled = saved.confettiEnabled;
+      } catch {}
+
+      // Sync UI from state
+      function syncSettingsUI() {
+        aMinEl.value = state.aMin;
+        aMaxEl.value = state.aMax;
+        bMinEl.value = state.bMin;
+        bMaxEl.value = state.bMax;
+        numOptionsEl.value = String(state.numOptions);
+        autoNextEl.checked = state.autoNext;
+        confettiToggleEl.checked = state.confettiEnabled;
+      }
+
+      function clampRange(minV, maxV) {
+        let min = Math.max(0, Math.floor(minV));
+        let max = Math.max(0, Math.floor(maxV));
+        if (min > max) [min, max] = [max, min];
+        return [min, max];
+      }
+
+      function saveSettings() {
+        const [aMin, aMax] = clampRange(Number(aMinEl.value), Number(aMaxEl.value));
+        const [bMin, bMax] = clampRange(Number(bMinEl.value), Number(bMaxEl.value));
+        const n = coerceCount(parseInt(numOptionsEl.value, 10));
+
+        state.aMin = aMin; state.aMax = aMax;
+        state.bMin = bMin; state.bMax = bMax;
+        state.numOptions = n;
+        state.autoNext = !!autoNextEl.checked;
+        state.confettiEnabled = !!confettiToggleEl.checked;
+
+        syncSettingsUI();
+        try {
+          localStorage.setItem('mtg-settings', JSON.stringify({
+            aMin: state.aMin, aMax: state.aMax,
+            bMin: state.bMin, bMax: state.bMax,
+            numOptions: state.numOptions,
+            autoNext: state.autoNext,
+            confettiEnabled: state.confettiEnabled,
+          }));
+        } catch {}
+      }
+
+      function randInt(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+      }
+
+      function shuffle(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+      }
+
+      function generateOptions(a, b, count, aMin, aMax, bMin, bMax) {
+        const correct = a * b;
+        const wrongSet = new Set();
+
+        // Sample from neighbors A±1 and B±1 combinations
+        for (let da = -1; da <= 1; da++) {
+          for (let db = -1; db <= 1; db++) {
+            const aa = a + da;
+            const bb = b + db;
+            if (aa === a && bb === b) continue; // skip actual
+            if (aa < aMin || aa > aMax || bb < bMin || bb > bMax) continue;
+            const val = aa * bb;
+            if (val !== correct) wrongSet.add(val);
+          }
+        }
+
+        let wrongs = Array.from(wrongSet);
+        shuffle(wrongs);
+        wrongs = wrongs.slice(0, Math.max(0, count - 1));
+
+        // Fallback: if not enough, sample random products within ranges
+        let guard = 0;
+        while (wrongs.length < (count - 1) && guard++ < 200) {
+          const aa = randInt(aMin, aMax);
+          const bb = randInt(bMin, bMax);
+          const val = aa * bb;
+          if (val !== correct && !wrongs.includes(val)) wrongs.push(val);
+        }
+
+        const options = [correct, ...wrongs];
+        return shuffle(options);
+      }
+
+      function formatAccuracy(c, t) {
+        if (!t) return '—';
+        const p = Math.round((c / t) * 100);
+        return p + '%';
+      }
+
+      function updateScoreboard() {
+        correctCntEl.textContent = String(state.correct);
+        totalCntEl.textContent = String(state.total);
+        accuracyEl.textContent = formatAccuracy(state.correct, state.total);
+      }
+
+      function clearEquationState() {
+        equationEl.classList.remove('ok', 'bad');
+      }
+
+      function clearTimers() {
+        if (state.nextTimeout) {
+          clearTimeout(state.nextTimeout);
+          state.nextTimeout = null;
+        }
+      }
+
+      function newRound() {
+        clearTimers();
+        state.answered = false;
+
+        const a = randInt(state.aMin, state.aMax);
+        const b = randInt(state.bMin, state.bMax);
+        state.currentA = a;
+        state.currentB = b;
+
+        equationEl.textContent = `${a} × ${b} = ?`;
+        clearEquationState();
+
+        const opts = generateOptions(a, b, state.numOptions, state.aMin, state.aMax, state.bMin, state.bMax);
+
+        // Render options
+        optionsEl.innerHTML = '';
+        // Apply layout class based on option count
+        optionsEl.classList.remove('opts-2','opts-3','opts-4','opts-6');
+        const cls = 'opts-' + Math.max(2, Math.min(6, opts.length));
+        optionsEl.classList.add(cls);
+        opts.forEach(val => {
+          const btn = document.createElement('button');
+          btn.className = 'option';
+          btn.textContent = String(val);
+          btn.dataset.value = String(val);
+          optionsEl.appendChild(btn);
+        });
+
+        // Wire clicks
+        optionsEl.querySelectorAll('.option').forEach(btn => {
+          btn.addEventListener('click', onAnswerClick, { once: false });
+        });
+      }
+
+      function disableOptions() {
+        optionsEl.querySelectorAll('.option').forEach(btn => btn.classList.add('disabled'));
+      }
+
+      function onAnswerClick(ev) {
+        if (state.answered) return;
+        const val = Number(ev.currentTarget.dataset.value);
+        const correctVal = state.currentA * state.currentB;
+        const isCorrect = val === correctVal;
+        state.answered = true;
+        state.total += 1;
+        if (isCorrect) state.correct += 1;
+
+        // Visual feedback
+        const btn = ev.currentTarget;
+        btn.classList.add(isCorrect ? 'correct' : 'wrong');
+        if (!isCorrect) {
+          const correctBtn = Array.from(optionsEl.querySelectorAll('.option'))
+            .find(b => Number(b.dataset.value) === correctVal);
+          if (correctBtn) correctBtn.classList.add('correct');
+        }
+        disableOptions();
+        updateScoreboard();
+        equationEl.textContent = `${state.currentA} × ${state.currentB} = ${correctVal}`;
+        clearEquationState();
+        equationEl.classList.add(isCorrect ? 'ok' : 'bad');
+
+        // Confetti every 10 correct answers
+        if (isCorrect && state.confettiEnabled && state.correct > 0 && state.correct % 10 === 0) {
+          confetti.burst(140);
+        }
+
+        if (state.autoNext) {
+          clearTimers();
+          state.nextTimeout = setTimeout(() => newRound(), isCorrect ? 900 : 1300);
+        }
+      }
+
+      // Buttons
+      nextBtn.addEventListener('click', () => {
+        newRound();
+      });
+      resetBtn.addEventListener('click', () => {
+        state.correct = 0; state.total = 0; updateScoreboard();
+      });
+      applySettingsBtn.addEventListener('click', () => {
+        saveSettings();
+        newRound();
+      });
+      newQuestionBtn.addEventListener('click', () => newRound());
+
+      // Initialize
+      syncSettingsUI();
+      updateScoreboard();
+      newRound();
+    })();
+  </script>
+</body>
+</html>
