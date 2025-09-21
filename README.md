@@ -1,11 +1,11 @@
-# TimeTables Game
+# TimesTables Game
 
-**TimeTables Game** is a lightweight, browser-based maths game for practising multiplication tables in an interactive way.  
+**TimesTables Game** is a lightweight, browser-based maths game for practising multiplication tables in an interactive way.  
 It runs entirely in the browser, with no setup or installation required — just open the link and start playing.  
 The project is part of the **fc-explorations** organisation, a space for creative side projects and educational demos.  
 
 ## 🎮 Play Online
-👉 [Play TimeTables Game](https://fc-explorations.github.io/FCTimeTablesGame/)
+👉 [Play TimeTables Game](https://fc-explorations.github.io/FCTimesTablesGame/)
 
 ## ✨ Features
 - Practise multiplication tables in a fun and interactive way.  
@@ -16,7 +16,7 @@ The project is part of the **fc-explorations** organisation, a space for creativ
 ## 🚀 Getting Started (Local Run)
 1. Clone this repo:
    ```bash
-   git clone https://github.com/fc-explorations/FCTimeTablesGame.git
+   git clone https://github.com/fc-explorations/FCTimesTablesGame.git
 ````
 
 2. Open `index.html` in your web browser.
